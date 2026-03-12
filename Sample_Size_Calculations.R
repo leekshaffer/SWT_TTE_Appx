@@ -10,17 +10,17 @@ load("Vax_data.Rds")
 ### Compare Week 18 (Last All-Control Week) Survey Covariates:
 
 Sort_list_int <- Vax_data %>% filter(Period==18) %>% dplyr::filter(lottery==1) %>%
-  dplyr::select(Cluster,W18_Excl_Perc,W18_First_18Pop_Pct,W18_Persu_Perc)
+  dplyr::select(Cluster,W18_First_18Pop_Pct,W18_Excl_Perc,W18_Persu_Perc)
 Sort_list_comp <- Vax_data %>% filter(Period==18) %>% dplyr::filter(lottery==0) %>%
-  dplyr::select(Cluster,W18_Excl_Perc,W18_First_18Pop_Pct,W18_Persu_Perc)
+  dplyr::select(Cluster,W18_First_18Pop_Pct,W18_Excl_Perc,,W18_Persu_Perc)
 
 Get_comp <- function(vals, Comp_list) {
   SLC <- Comp_list %>%
-    dplyr::mutate(Int_Excl=vals["W18_Excl_Perc"],
-                  Int_First=vals["W18_First_18Pop_Pct"],
+    dplyr::mutate(Int_First=vals["W18_First_18Pop_Pct"],
+                  Int_Excl=vals["W18_Excl_Perc"],
                   Int_Persu=vals["W18_Persu_Perc"],
-                  Dist=(W18_Excl_Perc-Int_Excl)^2+
-                    (W18_First_18Pop_Pct-Int_First)^2+
+                  Dist=(W18_First_18Pop_Pct-Int_First)^2+
+                    (W18_Excl_Perc-Int_Excl)^2+
                     (W18_Persu_Perc-Int_Persu)^2) %>%
     dplyr::arrange(Dist)
   return(unlist(SLC[1,c("Cluster","Dist")]))
@@ -49,14 +49,14 @@ MeanResps <- predict(lm(Diff_First~Period*Pd20,
                      newdata=tibble(Period=c(15,30),
                                     Pd20=Period > 20))
 
-### Model 1 (all clusters):
+### Design 1 (all clusters):
 
 lme1 <- summary(lmer(Diff_First~as.factor(Period)+(1|Cluster), 
                      data=Vax_data %>% filter(!Interv)))
 Mar_v_1 <- attr(lme1$varcor, "sc")^2+unname(attr(lme1$varcor$Cluster, "stddev"))^2
 bpICC_1 <- unname(attr(lme1$varcor$Cluster, "stddev"))^2/Mar_v_1
 
-### Model 2 (matched comparison clusters):
+### Design 2 (matched comparison clusters):
 
 lme2 <- summary(lmer(Diff_First~as.factor(Period)+(1|Cluster), 
                      data=Vax_data %>% 
